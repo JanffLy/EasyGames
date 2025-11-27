@@ -1,10 +1,10 @@
 # 🎮 EasyGames
 
-A concise collection of small games for passing time during leisure moments.
+A concise collection of small games developed by an AI for passing time during leisure moments .
 
 ## 📝 Project Introduction
 
-EasyGames is a project that brings together various classic small games, aiming to provide simple and enjoyable casual gaming experiences. Each game is an independent module implemented with a frontend-backend separation architecture.
+EasyGames is a project that brings together various classic small games, aiming to provide simple and enjoyable casual gaming experiences. Each game is an independent module implemented with a frontend-backend separation architecture. This project is developed by an AI assistant.
 
 ## 📁 Project Structure
 
