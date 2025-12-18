@@ -17,8 +17,10 @@ func InitRouter() {
 
 	// 注册路由
 	beego.Router("/api/game", gameController, "post:NewGame")
-	beego.Router("/api/game/:id", gameController, "get:GetGame")
+	beego.Router("/api/game/:id", gameController, "get:GetGame;delete:RemoveGame")
 	beego.Router("/api/game/:id/action", gameController, "post:UpdateGame")
+	beego.Router("/api/game/:id/record", gameController, "post:SaveRecord")
+	beego.Router("/api/leaderboard", gameController, "get:GetLeaderboard")
 }
 
 // corsHandler CORS中间件

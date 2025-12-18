@@ -32,6 +32,24 @@
           {{ gameState.paused ? 'Resume Game' : 'Pause Game' }}
         </button>
         
+        <!-- 保存记录表单 -->
+        <div class="save-record-form" v-if="gameState.gameOver && !recordSaved">
+          <h3>Game Over!</h3>
+          <p>Final Score: {{ gameState.score }}</p>
+          <div class="form-group">
+            <label for="playerName">Enter your name:</label>
+            <input 
+              type="text" 
+              id="playerName" 
+              v-model="playerName" 
+              placeholder="Your name" 
+              maxlength="20"
+              @keyup.enter="saveRecord"
+            >
+          </div>
+          <button @click="saveRecord" class="save-button">Save Record</button>
+        </div>
+        
         <div class="controls-info">
           <h3>Controls:</h3>
           <ul>
@@ -43,13 +61,37 @@
         </div>
       </div>
     </div>
+    
+    <!-- 排行榜区域 -->
+    <div class="leaderboard-section">
+      <h2>Leaderboard</h2>
+      <div class="leaderboard">
+        <div class="leaderboard-header">
+          <div class="rank">Rank</div>
+          <div class="name">Player</div>
+          <div class="score">Score</div>
+          <div class="lines">Lines</div>
+        </div>
+        <div class="leaderboard-body">
+          <div class="leaderboard-item" v-for="(item, index) in leaderboard" :key="index">
+            <div class="rank">{{ index + 1 }}</div>
+            <div class="name">{{ item.player_name }}</div>
+            <div class="score">{{ item.score }}</div>
+            <div class="lines">{{ item.lines }}</div>
+          </div>
+          <div class="no-records" v-if="leaderboard.length === 0">
+            No records yet. Be the first! 
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import GameBoard from './components/GameBoard.vue'
-import { startNewGame, getGameState, sendGameAction, endGame } from './utils/gameService.js'
+import { startNewGame, getGameState, sendGameAction, endGame, saveGameRecord, getLeaderboard } from './utils/gameService.js'
 
 export default {
   name: 'App',
@@ -65,10 +107,14 @@ export default {
       score: 0,
       lines: 0,
       level: 1,
-      board: [],
+      board: { grid: [] },
       currentPiece: null,
       nextPiece: null
     })
+    
+    const playerName = ref('')
+    const recordSaved = ref(false)
+    const leaderboard = ref([])
 
     let gameLoop = null
 
@@ -122,8 +168,9 @@ export default {
           gameState.value.gameOver = updatedState.gameOver
 
           if (updatedState.gameOver) {
-            endGameLoop()
-          }
+          endGameLoop()
+          recordSaved.value = false // 重置记录保存状态
+        }
         } catch (error) {
           console.error('Failed to update game state:', error)
         }
@@ -177,8 +224,43 @@ export default {
       }
     }
 
+    // 保存游戏记录
+    const saveRecord = async () => {
+      if (!playerName.value.trim() || !gameState.value.gameId) return
+      
+      try {
+        await saveGameRecord(gameState.value.gameId, playerName.value.trim(), gameState.value.score)
+        recordSaved.value = true
+        playerName.value = ''
+        fetchLeaderboard() // 更新排行榜
+      } catch (error) {
+        console.error('Failed to save record:', error)
+      }
+    }
+    
+    // 获取排行榜
+    const fetchLeaderboard = async () => {
+      try {
+        const data = await getLeaderboard(10)
+        // 确保leaderboard.value始终是数组，避免null导致的TypeError
+        leaderboard.value = data || []
+      } catch (error) {
+        console.error('Failed to fetch leaderboard:', error)
+        // 发生错误时也确保leaderboard.value是数组
+        leaderboard.value = []
+      }
+    }
+    
+    // 监听游戏结束状态，自动获取最新排行榜
+    watch(() => gameState.value.gameOver, (newVal) => {
+      if (newVal) {
+        fetchLeaderboard()
+      }
+    })
+    
     onMounted(() => {
       window.addEventListener('keydown', handleKeyDown)
+      fetchLeaderboard() // 初始化时获取排行榜
     })
 
     onUnmounted(() => {
@@ -191,8 +273,12 @@ export default {
 
     return {
       gameState,
+      playerName,
+      recordSaved,
+      leaderboard,
       startGame,
-      pauseGame
+      pauseGame,
+      saveRecord
     }
   }
 }
@@ -280,6 +366,134 @@ export default {
 }
 
 .controls-info strong {
-  color: #333;
-}
+    color: #333;
+  }
+  
+  /* 保存记录表单样式 */
+  .save-record-form {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f5f5f5;
+    border-radius: 5px;
+    text-align: center;
+  }
+  
+  .save-record-form h3 {
+    margin-top: 0;
+    color: #333;
+  }
+  
+  .save-record-form p {
+    font-size: 18px;
+    font-weight: bold;
+    color: #4CAF50;
+    margin: 10px 0;
+  }
+  
+  .form-group {
+    margin: 15px 0;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #666;
+    font-size: 14px;
+  }
+  
+  .form-group input {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-size: 16px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .save-button {
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+  }
+  
+  .save-button:hover {
+    background-color: #0b7dda;
+  }
+  
+  /* 排行榜样式 */
+  .leaderboard-section {
+    margin-top: 40px;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 10px;
+  }
+  
+  .leaderboard-section h2 {
+    margin-top: 0;
+    color: #333;
+    text-align: center;
+  }
+  
+  .leaderboard {
+    max-width: 600px;
+    margin: 0 auto;
+    border-radius: 5px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .leaderboard-header {
+    display: flex;
+    background-color: #333;
+    color: white;
+    font-weight: bold;
+    padding: 10px;
+  }
+  
+  .leaderboard-header .rank, .leaderboard-header .score, .leaderboard-header .lines {
+    width: 80px;
+    text-align: center;
+  }
+  
+  .leaderboard-header .name {
+    flex: 1;
+    text-align: center;
+  }
+  
+  .leaderboard-body {
+    background-color: white;
+  }
+  
+  .leaderboard-item {
+    display: flex;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .leaderboard-item:last-child {
+    border-bottom: none;
+  }
+  
+  .leaderboard-item .rank, .leaderboard-item .score, .leaderboard-item .lines {
+    width: 80px;
+    text-align: center;
+  }
+  
+  .leaderboard-item .name {
+    flex: 1;
+    text-align: center;
+    font-weight: bold;
+  }
+  
+  .no-records {
+    padding: 20px;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+  }
 </style>

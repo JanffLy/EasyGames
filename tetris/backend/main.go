@@ -11,6 +11,14 @@ import (
 )
 
 func main() {
+	// 初始化数据库连接
+	utils.InitDB()
+	defer utils.CloseDB()
+
+	// 初始化Redis连接
+	utils.InitRedis()
+	defer utils.CloseRedis()
+
 	// 初始化游戏管理器
 	gameManager := utils.GetGameManager()
 	if gameManager == nil {

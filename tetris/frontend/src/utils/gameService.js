@@ -148,6 +148,58 @@ export class GameService {
       throw error;
     }
   }
+
+  // 保存游戏记录
+  async saveRecord(gameId, playerName, score) {
+    const url = `${this.apiBaseUrl}/game/${gameId}/record`;
+    console.log(`正在保存游戏记录: ${url}`);
+    try {
+      const response = await this.fetchWithRetry(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ playerName, score }),
+      });
+      console.log(`保存记录API响应状态: ${response.status}, ${response.statusText}`);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error(`API错误数据:`, errorData);
+        throw new Error(`保存记录失败: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log(`成功保存游戏记录:`, data);
+      return data;
+    } catch (error) {
+      console.error(`保存游戏记录时发生异常:`, error);
+      throw error;
+    }
+  }
+
+  // 获取排行榜
+  async getLeaderboard(limit = 10) {
+    const url = `${this.apiBaseUrl}/leaderboard?limit=${limit}`;
+    console.log(`正在获取排行榜: ${url}`);
+    try {
+      const response = await this.fetchWithRetry(url);
+      console.log(`排行榜API响应状态: ${response.status}, ${response.statusText}`);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error(`API错误数据:`, errorData);
+        throw new Error(`获取排行榜失败: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log(`成功获取排行榜:`, data);
+      return data;
+    } catch (error) {
+      console.error(`获取排行榜时发生异常:`, error);
+      throw error;
+    }
+  }
 }
 
 // 导出单例实例
@@ -158,3 +210,5 @@ export const startNewGame = () => gameService.createGame();
 export const getGameState = (gameId) => gameService.getGameState(gameId);
 export const sendGameAction = (gameId, action) => gameService.sendAction(gameId, action);
 export const endGame = (gameId) => gameService.endGame(gameId);
+export const saveGameRecord = (gameId, playerName, score) => gameService.saveRecord(gameId, playerName, score);
+export const getLeaderboard = (limit) => gameService.getLeaderboard(limit);
