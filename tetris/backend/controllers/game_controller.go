@@ -111,6 +111,8 @@ func (c *GameController) UpdateGame() {
 		success = gameManager.MoveDown(gameID)
 	case "harddrop":
 		success = gameManager.HardDrop(gameID)
+	case "hardDrop":
+		success = gameManager.HardDrop(gameID)
 	case "rotate":
 		success = gameManager.Rotate(gameID)
 	default:
